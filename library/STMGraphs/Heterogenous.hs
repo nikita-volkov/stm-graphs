@@ -25,6 +25,8 @@ new a =
 -- An edge to a node with a value @a@.
 data family Edge a
 
+deriving instance Typeable Edge
+
 
 -- * On
 -------------------------
@@ -48,12 +50,12 @@ set a =
   withReaderT unpack $ 
   H.set $ unsafeCoerce a
 
-addEdge :: (Multimap.Key (Edge b), Typeable (Edge b)) => Node b -> Edge b -> On a STM ()
+addEdge :: (Multimap.Key (Edge b), Typeable b) => Node b -> Edge b -> On a STM ()
 addEdge target edge =
   withReaderT unpack $
   H.addEdge (unsafeCoerce target) (DynKey.dynKey edge)
 
-removeEdge :: (Multimap.Key (Edge b), Typeable (Edge b)) => Node b -> Edge b -> On a STM ()
+removeEdge :: (Multimap.Key (Edge b), Typeable b) => Node b -> Edge b -> On a STM ()
 removeEdge target edge =
   withReaderT unpack $ 
   H.removeEdge (unsafeCoerce target) (DynKey.dynKey edge)
@@ -63,7 +65,7 @@ remove =
   withReaderT unpack $ 
   H.remove
 
-streamTargets :: (Multimap.Key (Edge b), Typeable (Edge b)) => Edge b -> On a (ListT.ListT STM) (Node b)
+streamTargets :: (Multimap.Key (Edge b), Typeable b) => Edge b -> On a (ListT.ListT STM) (Node b)
 streamTargets e =
   withReaderT unpack $
   fmap unsafeCoerce $
