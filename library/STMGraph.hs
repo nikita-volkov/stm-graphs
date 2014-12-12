@@ -1,30 +1,30 @@
 -- |
--- A heterogenous directed mutable graph in STM.
+-- A homogenous directed mutable graph in STM.
 module STMGraph
 where
 
-import STMGraph.Prelude
+import STMGraph.Prelude hiding (on)
 import qualified ListT
 import qualified GHC.Exts
 import qualified STMContainers.Multimap as Multimap
 import qualified STMContainers.Set as Set
 import qualified STMContainers.Map as Map
-import qualified STMGraph.DynamicStore as DynamicStore
 import qualified Focus
 
 
-data Node a =
+data Node e v =
   Node {
     unique :: !Unique,
-    value :: !(TVar a),
-    targets :: !DynamicStore.DynamicStore,
-    sources :: !DynamicStore.DynamicStore
+    value :: !(TVar v),
+    targets :: !(Multimap.Multimap e (Node e v)),
+    sources :: !(Multimap.Multimap (Node e v) e)
   }
 
-instance Eq (Node a) where
-  a == b = unique a == unique b
+instance Eq (Node e v) where
+  a == b = 
+    unique a == unique b
 
-instance Hashable (Node a) where
+instance Hashable (Node e v) where
   hashWithSalt s n = 
     combine s (hashUnique (unique n))
     where
@@ -32,18 +32,10 @@ instance Hashable (Node a) where
   hash n = 
     hashUnique (unique n)
 
-type instance DynamicStore.Key (Set.Set (Node a)) = a
-type instance DynamicStore.Key (Multimap.Multimap (Edge a) (Node a)) = a
 
-
--- |
--- An edge to a node with a value @a@.
-data family Edge a
-
-
-new :: a -> STM (Node a)
+new :: v -> STM (Node e v)
 new a =
-  Node <$> newUniqueSTM <*> newTVar a <*> DynamicStore.new <*> DynamicStore.new
+  Node <$> newUniqueSTM <*> newTVar a <*> Multimap.new <*> Multimap.new
   where
     newUniqueSTM = pure $ unsafePerformIO newUnique
 
@@ -53,49 +45,41 @@ new a =
 
 -- |
 -- A computation in a context of a node.
-type On a m r =
-  ReaderT (Node a) m r
+type On e v m r =
+  ReaderT (Node e v) m r
 
-on :: Node a -> On a m r -> m r
+on :: Node e v -> On e v m r -> m r
 on node reader =
   runReaderT reader node
 
-remove :: On a STM ()
-remove =
-  undefined
-
-get :: On a STM a
+get :: On e v STM v
 get =
   ReaderT $ \n -> readTVar (value n)
 
-set :: a -> On a STM ()
+set :: v -> On e v STM ()
 set a =
   ReaderT $ \n -> writeTVar (value n) a
 
-addTarget :: (Typeable a, Multimap.Key (Edge a)) => Edge a -> Node a -> On a STM ()
-addTarget edge target =
+addEdge :: (Multimap.Key e) => Node e v -> e -> On e v STM ()
+addEdge target edge =
   ReaderT $ \source -> do
-    DynamicStore.on (sources target) $ DynamicStore.focus $ \case
-      Nothing -> 
-        (,) <$> pure () <*> (Focus.Replace <$> Set.new)
-      Just s -> 
-        (Set.insert source s) *>
-        (pure ((,) () Focus.Keep))
-    DynamicStore.on (targets source) $ DynamicStore.focus $ \case
-      Nothing ->
-        (,) <$> pure () <*> (Focus.Replace <$> Multimap.new)
-      Just m ->
-        (Multimap.insert target edge m) *>
-        (pure ((,) () Focus.Keep))
+    Multimap.insert target edge (targets source)
+    Multimap.insert edge source (sources target)
 
--- |
--- Remove all targets by an edge.
-removeTargets :: Edge a -> On a STM Bool
-removeTargets edge =
+removeEdge :: (Multimap.Key e) => Node e v -> e -> On e v STM ()
+removeEdge target edge =
   ReaderT $ \source -> do
-    undefined
+    Multimap.delete target edge (targets source)
+    Multimap.delete edge source (sources target)
 
-streamTargets :: Edge b -> On a (ListT.ListT STM) (Node b)
+remove :: (Multimap.Key e) => On e v STM ()
+remove =
+  ReaderT $ \target -> do
+    flip ListT.traverse_ (Multimap.stream (sources target)) $ \(source, edge) ->
+      on source $ removeEdge target edge
+
+streamTargets :: (Multimap.Key e) => e -> On e v (ListT.ListT STM) (Node e v)
 streamTargets e =
-  undefined
+  ReaderT $ \source ->
+    Multimap.streamByKey e (targets source)
 
