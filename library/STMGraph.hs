@@ -88,8 +88,10 @@ addTarget edge target =
         (Multimap.insert target edge m) *>
         (pure ((,) () Focus.Keep))
 
-removeTarget :: Edge a -> On a STM Bool
-removeTarget edge =
+-- |
+-- Remove all targets by an edge.
+removeTargets :: Edge a -> On a STM Bool
+removeTargets edge =
   ReaderT $ \source -> do
     undefined
 
