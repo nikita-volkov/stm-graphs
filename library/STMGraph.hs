@@ -20,7 +20,6 @@ data Node a =
     targets :: !DynamicStore.DynamicStore,
     sources :: !DynamicStore.DynamicStore
   }
-  deriving (Typeable)
 
 instance Eq (Node a) where
   a == b = unique a == unique b
@@ -32,6 +31,9 @@ instance Hashable (Node a) where
       combine h1 h2 = (h1 * 16777619) `xor` h2
   hash n = 
     hashUnique (unique n)
+
+type instance DynamicStore.Key (Set.Set (Node a)) = a
+type instance DynamicStore.Key (Multimap.Multimap (Edge a) (Node a)) = a
 
 
 -- |
@@ -70,8 +72,7 @@ set :: a -> On a STM ()
 set a =
   ReaderT $ \n -> writeTVar (value n) a
 
-addTarget :: (Typeable a, Typeable (Edge a), Multimap.Key (Edge a)) => 
-             Edge a -> Node a -> On a STM ()
+addTarget :: (Typeable a, Multimap.Key (Edge a)) => Edge a -> Node a -> On a STM ()
 addTarget edge target =
   ReaderT $ \source -> do
     DynamicStore.on (sources target) $ DynamicStore.focus $ \case
