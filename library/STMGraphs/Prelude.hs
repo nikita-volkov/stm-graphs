@@ -1,4 +1,4 @@
-module STMGraph.Prelude
+module STMGraphs.Prelude
 ( 
   module Exports,
 )
@@ -6,7 +6,11 @@ where
 
 -- base
 -------------------------
-import BasePrelude as Exports
+import GHC.Exts as Exports (Any)
+
+-- base-prelude
+-------------------------
+import BasePrelude as Exports hiding (on, Any)
 
 -- hashable
 -------------------------

@@ -1,9 +1,6 @@
--- |
--- A homogenous directed mutable graph in STM.
-module STMGraph
-where
+module STMGraphs.Homogenous where
 
-import STMGraph.Prelude hiding (on)
+import STMGraphs.Prelude
 import qualified ListT
 import qualified GHC.Exts
 import qualified STMContainers.Multimap as Multimap
@@ -12,6 +9,8 @@ import qualified STMContainers.Map as Map
 import qualified Focus
 
 
+-- |
+-- A homogenous directed mutable graph in STM.
 data Node e v =
   Node {
     unique :: !Unique,

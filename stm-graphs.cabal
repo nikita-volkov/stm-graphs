@@ -1,15 +1,15 @@
 name:
-  stm-graph
+  stm-graphs
 version:
   0.1.0
 synopsis:
-  A heterogenous directed mutable graph in STM
+  Mutable graphs in STM
 description:
 category:
 homepage:
-  https://github.com/nikita-volkov/stm-graph 
+  https://github.com/nikita-volkov/stm-graphs 
 bug-reports:
-  https://github.com/nikita-volkov/stm-graph/issues 
+  https://github.com/nikita-volkov/stm-graphs/issues 
 author:
   Nikita Volkov <nikita.y.volkov@mail.ru>
 maintainer:
@@ -30,21 +30,21 @@ source-repository head
   type:
     git
   location:
-    git://github.com/nikita-volkov/stm-graph.git
+    git://github.com/nikita-volkov/stm-graphs.git
 
 
 library
   hs-source-dirs:
     library
   other-modules:
-    STMGraph.Prelude
+    STMGraphs.Prelude
   exposed-modules:
-    STMGraph
+    STMGraphs.Homogenous
   ghc-options:
     -funbox-strict-fields
   build-depends:
     -- data:
-    stm-containers >= 0.2.6 && < 0.3,
+    stm-containers >= 0.2.5 && < 0.3,
     hashable < 1.3,
     -- control:
     list-t == 0.3.*,
