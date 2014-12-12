@@ -37,9 +37,11 @@ library
   hs-source-dirs:
     library
   other-modules:
+    STMGraphs.Heterogenous.DynKey
     STMGraphs.Prelude
   exposed-modules:
     STMGraphs.Homogenous
+    STMGraphs.Heterogenous
   ghc-options:
     -funbox-strict-fields
   build-depends:
