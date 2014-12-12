@@ -1,24 +1,19 @@
 -- |
 -- A heterogenous directed mutable graph in STM.
 module STMGraph
-(
-  Node(..),
-  new,
-  remove,
-  addTarget,
-  getTargetsByType,
-  getValue,
-  setValue,
-)
 where
 
 import STMGraph.Prelude
 import qualified ListT
+import qualified GHC.Exts
+import qualified STMContainers.Multimap as Multimap
 
 
 data Node a =
   Node {
-    unique :: !Unique
+    unique :: !Unique,
+    value :: !(TVar a),
+    targets :: Multimap.Multimap GHC.Exts.Any GHC.Exts.Any
   }
 
 instance Eq (Node a) where
@@ -32,27 +27,35 @@ instance Hashable (Node a) where
   hash n = 
     hashUnique (unique n)
 
+
+-- |
+-- An edge to a node with a value @a@.
+data family Edge a
+
+
 new :: a -> STM (Node a)
-new =
-  undefined
+new a =
+  Node <$> newUniqueSTM <*> newTVar a <*> Multimap.new
+  where
+    newUniqueSTM = pure $ unsafePerformIO newUnique
 
 remove :: Node a -> STM ()
 remove =
   undefined
 
-addTarget :: Node a -> Node b -> STM ()
-addTarget =
+add :: Edge a -> Node a -> Node b -> STM ()
+add =
   undefined
 
-getTargetsByType :: Node a -> ListT.ListT STM (Node b)
-getTargetsByType =
+list :: Edge b -> Node a -> ListT.ListT STM (Node b)
+list e n =
   undefined
 
-getValue :: Node a -> STM a
-getValue =
+get :: Node a -> STM a
+get =
   undefined
 
-setValue :: a -> Node a -> STM ()
-setValue =
+set :: a -> Node a -> STM ()
+set =
   undefined
 
