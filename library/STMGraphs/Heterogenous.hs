@@ -16,7 +16,7 @@ newtype Node a =
   Node { unpack :: H.Node DynKey.DynKey Any }
   deriving (Eq, Hashable)
 
-new :: Typeable a => a -> STM (Node a)
+new :: a -> STM (Node a)
 new a =
   Node <$> H.new (unsafeCoerce a)
 
