@@ -7,14 +7,20 @@ import STMGraph.Prelude
 import qualified ListT
 import qualified GHC.Exts
 import qualified STMContainers.Multimap as Multimap
+import qualified STMContainers.Set as Set
+import qualified STMContainers.Map as Map
+import qualified STMGraph.DynamicStore as DynamicStore
+import qualified Focus
 
 
 data Node a =
   Node {
     unique :: !Unique,
     value :: !(TVar a),
-    targets :: !(Multimap.Multimap GHC.Exts.Any GHC.Exts.Any)
+    targets :: !DynamicStore.DynamicStore,
+    sources :: !DynamicStore.DynamicStore
   }
+  deriving (Typeable)
 
 instance Eq (Node a) where
   a == b = unique a == unique b
@@ -35,7 +41,7 @@ data family Edge a
 
 new :: a -> STM (Node a)
 new a =
-  Node <$> newUniqueSTM <*> newTVar a <*> Multimap.new
+  Node <$> newUniqueSTM <*> newTVar a <*> DynamicStore.new <*> DynamicStore.new
   where
     newUniqueSTM = pure $ unsafePerformIO newUnique
 
@@ -45,34 +51,48 @@ new a =
 
 -- |
 -- A computation in a context of a node.
-type On m r =
-  forall a. ReaderT (Node a) m r
+type On a m r =
+  ReaderT (Node a) m r
 
-on :: Node a -> On m r -> m r
+on :: Node a -> On a m r -> m r
 on node reader =
   runReaderT reader node
 
-remove :: On STM ()
+remove :: On a STM ()
 remove =
   undefined
 
-get :: On STM a
+get :: On a STM a
 get =
-  undefined
+  ReaderT $ \n -> readTVar (value n)
 
-set :: a -> On STM ()
-set =
-  undefined
+set :: a -> On a STM ()
+set a =
+  ReaderT $ \n -> writeTVar (value n) a
 
-addTarget :: Edge a -> Node a -> On STM ()
-addTarget =
-  undefined
+addTarget :: (Typeable a, Typeable (Edge a), Multimap.Key (Edge a)) => 
+             Edge a -> Node a -> On a STM ()
+addTarget edge target =
+  ReaderT $ \source -> do
+    DynamicStore.on (sources target) $ DynamicStore.focus $ \case
+      Nothing -> 
+        (,) <$> pure () <*> (Focus.Replace <$> Set.new)
+      Just s -> 
+        (Set.insert source s) *>
+        (pure ((,) () Focus.Keep))
+    DynamicStore.on (targets source) $ DynamicStore.focus $ \case
+      Nothing ->
+        (,) <$> pure () <*> (Focus.Replace <$> Multimap.new)
+      Just m ->
+        (Multimap.insert target edge m) *>
+        (pure ((,) () Focus.Keep))
 
-removeTarget :: Edge a -> On STM Bool
-removeTarget =
-  undefined
+removeTarget :: Edge a -> On a STM Bool
+removeTarget edge =
+  ReaderT $ \source -> do
+    undefined
 
-streamTargets :: Edge b -> On (ListT.ListT STM) (Node b)
+streamTargets :: Edge b -> On a (ListT.ListT STM) (Node b)
 streamTargets e =
   undefined
 
