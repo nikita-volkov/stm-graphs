@@ -11,3 +11,7 @@ import BasePrelude as Exports
 -- hashable
 -------------------------
 import Data.Hashable as Exports (Hashable(..))
+
+-- transformers
+-------------------------
+import Control.Monad.Trans.Reader as Exports

@@ -13,7 +13,7 @@ data Node a =
   Node {
     unique :: !Unique,
     value :: !(TVar a),
-    targets :: Multimap.Multimap GHC.Exts.Any GHC.Exts.Any
+    targets :: !(Multimap.Multimap GHC.Exts.Any GHC.Exts.Any)
   }
 
 instance Eq (Node a) where
@@ -39,23 +39,40 @@ new a =
   where
     newUniqueSTM = pure $ unsafePerformIO newUnique
 
-remove :: Node a -> STM ()
+
+-- * On
+-------------------------
+
+-- |
+-- A computation in a context of a node.
+type On m r =
+  forall a. ReaderT (Node a) m r
+
+on :: Node a -> On m r -> m r
+on node reader =
+  runReaderT reader node
+
+remove :: On STM ()
 remove =
   undefined
 
-add :: Edge a -> Node a -> Node b -> STM ()
-add =
-  undefined
-
-list :: Edge b -> Node a -> ListT.ListT STM (Node b)
-list e n =
-  undefined
-
-get :: Node a -> STM a
+get :: On STM a
 get =
   undefined
 
-set :: a -> Node a -> STM ()
+set :: a -> On STM ()
 set =
+  undefined
+
+addTarget :: Edge a -> Node a -> On STM ()
+addTarget =
+  undefined
+
+removeTarget :: Edge a -> On STM Bool
+removeTarget =
+  undefined
+
+streamTargets :: Edge b -> On (ListT.ListT STM) (Node b)
+streamTargets e =
   undefined
 
